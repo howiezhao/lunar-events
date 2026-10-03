@@ -1,15 +1,22 @@
 # 农历周期活动
 
+![Static Badge](https://img.shields.io/badge/TypeScript-5.5.3-blue) ![Static Badge](https://img.shields.io/badge/React-18.3.1-blue) ![Static Badge](https://img.shields.io/badge/Vite-8.3.1-blue) ![GitHub deployments](https://img.shields.io/github/deployments/howiezhao/lunar-events/github-pages)
+
 基于天文算法精确推算农历日期，创建农历年度重复活动并导出 ICS 文件。
 
-## 功能
+在线使用：https://howiezhao.github.io/lunar-events
+
+## 功能特性
 
 - **精确的农历日历** — 使用 Jean Meeus《天文算法》中的新月公式，精度 ±2 分钟，无需预置数据表
 - **完整的农历显示** — 天干地支年名、初一/十五高亮、今日标记、闰月支持
-- **农历周期活动** — 为任意农历日期生成 2000–2060 年间对应的每一个阳历日期
+- **农历周期活动** — 为任意农历日期生成 2000–2060 年间对应的每一个公历日期
 - **ICS 文件导出** — 下载后直接导入 Google 日历、Apple 日历、Outlook
+- **响应式设计** — 完美适配电脑、平板、手机等不同屏幕尺寸
 
 ## 快速开始
+
+使用以下命令在本地运行：
 
 ```bash
 cd lunar-events
@@ -19,31 +26,19 @@ npm run dev
 
 打开 http://localhost:5173 即可使用。
 
-## 使用方法
-
-1. **浏览日历** — 点击左上/右上箭头切换农历月份，点击「今天」回到本月
-2. **选择日期** — 点击日历中的某一天，日期会自动填入右侧表单
-3. **填写信息** — 输入活动名称，选择生成年份范围（可勾选"闰月"）
-4. **添加并下载** — 点击「添加活动」，然后点击「下载 ICS」
-
-## 关于闰月
-
-农历约每 2–3 年有一个闰月（例如闰六月）。若所选年份不存在该闰月，对应年份会自动跳过，不强制生成。
-
-## 技术说明
-
-| 文件 | 说明 |
-|------|------|
-| `src/lunar.ts` | 天文算法：新月推算、中气判断、农历↔公历互转 |
-| `src/ics.ts` | ICS 文件生成与下载 |
-| `src/components/Calendar.tsx` | 农历日历网格组件 |
-| `src/components/EventForm.tsx` | 活动创建表单 |
-| `src/components/EventList.tsx` | 活动列表与下载 |
-| `src/App.tsx` | 主应用，状态管理（localStorage 持久化） |
-
 ## 构建部署
+
+项目基于 GitHub Actions 自动部署到 GitHub Pages，也可以使用以下命令手动构建部署：
 
 ```bash
 npm run build   # 输出到 dist/
 npm run preview # 预览构建结果
 ```
+
+## 参与贡献
+
+欢迎提交任何 PR 和 Issue。
+
+## 开源协议
+
+本仓库采用 [Apache-2.0 许可证](LICENSE)。
