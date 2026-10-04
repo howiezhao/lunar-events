@@ -28,6 +28,51 @@ function icsDate(year: number, month: number, day: number): string {
   return `${year}${pad(month)}${pad(day)}`;
 }
 
+/** Format a UTC timestamp as YYYYMMDDTHHMMSSZ (RFC 5545 DATE-TIME). */
+function icsDateTimeUTC(date: Date): string {
+  return (
+    String(date.getUTCFullYear()) +
+    pad(date.getUTCMonth() + 1) +
+    pad(date.getUTCDate()) +
+    'T' +
+    pad(date.getUTCHours()) +
+    pad(date.getUTCMinutes()) +
+    pad(date.getUTCSeconds()) +
+    'Z'
+  );
+}
+
+/** Escape a TEXT value per RFC 5545 §3.3.11. */
+function escapeText(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,');
+}
+
+/**
+ * Fold a content line to at most 75 octets per physical line (RFC 5545 §3.1).
+ * Continuation lines start with a single space. UTF-8 characters are not split.
+ */
+function foldLine(line: string): string {
+  const bytes = new TextEncoder().encode(line);
+  if (bytes.length <= 75) return line;
+
+  const chunks: string[] = [];
+  let offset = 0;
+  let max = 75;
+  const decoder = new TextDecoder();
+  while (offset < bytes.length) {
+    let end = Math.min(offset + max, bytes.length);
+    while (end > offset && end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
+    chunks.push(decoder.decode(bytes.subarray(offset, end)));
+    offset = end;
+    max = 74;
+  }
+  return chunks.join('\r\n ');
+}
+
 /** Chinese lunar date description, e.g. "农历闰六月初一". */
 function lunarDescription(ev: LunarEvent): string {
   const m = CN_MONTHS[ev.lunarMonth - 1];
@@ -40,7 +85,7 @@ function lunarDescription(ev: LunarEvent): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Generate all VEVENT lines for a single LunarEvent. */
-function generateVEvents(ev: LunarEvent): string[] {
+function generateVEvents(ev: LunarEvent, dtStamp: string): string[] {
   const lines: string[] = [];
   const desc = lunarDescription(ev);
 
@@ -61,15 +106,17 @@ function generateVEvents(ev: LunarEvent): string[] {
       ev.isLeapMonth ? 'L' : '',
       ev.lunarDay,
       ev.id,
-    ].join('-') + '@lunarapp';
+    ].join('-') + '@lunar-events';
 
     lines.push(
       'BEGIN:VEVENT',
       `UID:${uid}`,
+      `DTSTAMP:${dtStamp}`,
       `DTSTART;VALUE=DATE:${dtStart}`,
       `DTEND;VALUE=DATE:${dtEnd}`,
       `SUMMARY:${ev.name}`,
       `DESCRIPTION:${desc}`,
+      'TRANSP:TRANSPARENT',
       `X-LUNAR-DATE:${desc}`,
       'END:VEVENT',
     );
@@ -78,20 +125,29 @@ function generateVEvents(ev: LunarEvent): string[] {
   return lines;
 }
 
+/** Calendar description: states that this service generated the file. */
+const CALENDAR_DESCRIPTION =
+  '本日历由农历周期活动生成 https://howiezhao.github.io/lunar-events';
+
 /**
  * Build a complete ICS string for an array of LunarEvents.
  * All events are combined into a single VCALENDAR component.
  */
 export function buildICS(events: LunarEvent[]): string {
+  const description = escapeText(CALENDAR_DESCRIPTION);
+  const dtStamp = icsDateTimeUTC(new Date());
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//农历周期活动//ZH',
+    'PRODID:-//howiezhao//lunar-events//ZH',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-CALNAME:农历周期活动',
+    // Apple Calendar reads X-WR-CALDESC; DESCRIPTION is the RFC 7986 property.
+    foldLine(`X-WR-CALDESC:${description}`),
+    foldLine(`DESCRIPTION:${description}`),
     'X-WR-TIMEZONE:Asia/Shanghai',
-    ...events.flatMap(generateVEvents),
+    ...events.flatMap(ev => generateVEvents(ev, dtStamp)),
     'END:VCALENDAR',
   ];
   return lines.join('\r\n');

@@ -112,7 +112,7 @@ export default function EventList({ events, onDelete }: EventListProps) {
       {events.length > 0 && (
         <div className="event-list__footer">
           <p className="event-list__tip">
-            下载 ICS 文件后，在 Google 日历或 Apple 日历中选择「导入」即可添加所有活动。每个活动对应准确的阳历日期。
+            下载 ICS 文件后，在 Google 日历或 Apple 日历中选择「导入」即可添加所有活动。每个活动对应准确的公历日期。
           </p>
         </div>
       )}

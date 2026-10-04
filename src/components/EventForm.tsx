@@ -201,7 +201,7 @@ export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
       {/* Preview dates */}
       {previewDates.length > 0 && (
         <div className="form-group">
-          <label className="form-label">阳历日期预览</label>
+          <label className="form-label">公历日期预览</label>
           <div className="form-preview">
             {previewDates.map(d => (
               <span key={d} className="form-preview__date">{d}</span>
