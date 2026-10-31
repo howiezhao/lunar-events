@@ -14,6 +14,7 @@ import {
   CN_MONTHS,
   CN_DAYS,
 } from './lunar';
+import { formatCoord, normalizeLocation } from './geo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -80,6 +81,43 @@ function lunarDescription(ev: LunarEvent): string {
   return `农历${ev.isLeapMonth ? '闰' : ''}${m}月${d}`;
 }
 
+/** Quote an ICS parameter value. Drops characters that cannot appear inside it. */
+function quoteParam(value: string): string {
+  const cleaned = value.replace(/[\r\n"\\]/g, ' ').replace(/\s+/g, ' ').trim();
+  return `"${cleaned}"`;
+}
+
+/**
+ * LOCATION plus, when coordinates exist, GEO and Apple's map pin.
+ * GEO is "latitude;longitude" (RFC 5545). Apple wants a geo: URI.
+ */
+function locationProperties(ev: LunarEvent): string[] {
+  const location = normalizeLocation(ev.location);
+  if (!location) return [];
+
+  const lines: string[] = [];
+  const coordLabel = location.coordinates
+    ? `${formatCoord(location.coordinates.latitude)}, ${formatCoord(location.coordinates.longitude)}`
+    : '';
+  const label = location.name || coordLabel;
+  if (label) lines.push(foldLine(`LOCATION:${escapeText(label)}`));
+
+  if (location.coordinates) {
+    const { latitude, longitude } = location.coordinates;
+    const lat = formatCoord(latitude);
+    const lon = formatCoord(longitude);
+    const title = location.name || coordLabel;
+    let apple =
+      `X-APPLE-STRUCTURED-LOCATION;VALUE=URI;X-APPLE-RADIUS=100;X-TITLE=${quoteParam(title)}`;
+    if (location.name) apple += `;X-ADDRESS=${quoteParam(location.name)}`;
+    apple += `:geo:${lat},${lon}`;
+
+    lines.push(`GEO:${lat};${lon}`, foldLine(apple));
+  }
+
+  return lines;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ICS Generation
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +126,7 @@ function lunarDescription(ev: LunarEvent): string {
 function generateVEvents(ev: LunarEvent, dtStamp: string): string[] {
   const lines: string[] = [];
   const desc = lunarDescription(ev);
+  const place = locationProperties(ev);
 
   for (let year = ev.startYear; year <= ev.endYear; year++) {
     const solar = lunarToSolar(year, ev.lunarMonth, ev.lunarDay, ev.isLeapMonth);
@@ -115,6 +154,7 @@ function generateVEvents(ev: LunarEvent, dtStamp: string): string[] {
       `DTSTART;VALUE=DATE:${dtStart}`,
       `DTEND;VALUE=DATE:${dtEnd}`,
       `SUMMARY:${ev.name}`,
+      ...place,
       `DESCRIPTION:${desc}`,
       'TRANSP:TRANSPARENT',
       `X-LUNAR-DATE:${desc}`,

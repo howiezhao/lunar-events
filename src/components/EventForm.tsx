@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   lunarToSolar,
   leapMonthExists,
@@ -9,6 +9,7 @@ import {
   LunarDate,
   LunarEvent,
 } from '../lunar';
+import { formatCoord, locationFromDraft, splitCoordinatePaste } from '../geo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -30,12 +31,17 @@ const MAX_YEAR = 2060;
 
 export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
   const [name, setName]           = useState('');
+  const [locationName, setLocationName] = useState('');
+  const [latitude, setLatitude]   = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [locating, setLocating]   = useState(false);
   const [month, setMonth]         = useState(1);
   const [day, setDay]             = useState(1);
   const [isLeap, setIsLeap]       = useState(false);
   const [startYear, setStartYear] = useState(CURRENT_YEAR);
   const [endYear, setEndYear]     = useState(CURRENT_YEAR + 20);
   const [error, setError]         = useState<string | null>(null);
+  const locateRequest = useRef(0);
 
   // When the calendar selection changes, sync form fields
   useEffect(() => {
@@ -65,9 +71,59 @@ export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
     leapMonthExists(CURRENT_YEAR + 1, month) ||
     leapMonthExists(CURRENT_YEAR - 1, month);
 
+  const handleCoordinatePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    const pair = splitCoordinatePaste(event.clipboardData.getData('text'));
+    if (!pair) return;
+    event.preventDefault();
+    setLatitude(pair.latitude);
+    setLongitude(pair.longitude);
+    setError(null);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('当前浏览器不支持定位');
+      return;
+    }
+    if (!window.isSecureContext) {
+      setError('定位需要通过 HTTPS 或 localhost 打开');
+      return;
+    }
+
+    const request = ++locateRequest.current;
+    setLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (locateRequest.current !== request) return;
+        setLatitude(formatCoord(position.coords.latitude));
+        setLongitude(formatCoord(position.coords.longitude));
+        setLocating(false);
+      },
+      (geoError) => {
+        if (locateRequest.current !== request) return;
+        setLocating(false);
+        setError(
+          geoError.code === geoError.PERMISSION_DENIED
+            ? '定位权限被拒绝，请允许浏览器使用位置，或手动填写经纬度'
+            : '无法获取当前位置，请手动填写经纬度',
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60_000 },
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError('请输入活动名称'); return; }
+
+    const { location, error: locationError } = locationFromDraft({
+      name: locationName,
+      latitude,
+      longitude,
+    });
+    if (locationError) { setError(locationError); return; }
+
     if (startYear > endYear) { setError('开始年份不能晚于结束年份'); return; }
     if (startYear < MIN_YEAR || endYear > MAX_YEAR) {
       setError(`年份范围需在 ${MIN_YEAR}–${MAX_YEAR} 之间`);
@@ -96,8 +152,14 @@ export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
       isLeapMonth: isLeap,
       startYear,
       endYear,
+      ...(location ? { location } : {}),
     });
+    locateRequest.current += 1;
+    setLocating(false);
     setName('');
+    setLocationName('');
+    setLatitude('');
+    setLongitude('');
     setError(null);
   };
 
@@ -123,8 +185,9 @@ export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
 
       {/* Name */}
       <div className="form-group">
-        <label className="form-label">活动名称</label>
+        <label className="form-label" htmlFor="event-name">活动名称</label>
         <input
+          id="event-name"
           className="form-input"
           type="text"
           value={name}
@@ -167,6 +230,66 @@ export default function EventForm({ selectedDate, onAdd }: EventFormProps) {
             <span>闰月（约每 2–3 年出现一次）</span>
           </label>
         )}
+      </div>
+
+      {/* Location */}
+      <div className="form-group">
+        <label className="form-label" htmlFor="event-location">地理位置</label>
+        <input
+          id="event-location"
+          className="form-input"
+          type="text"
+          value={locationName}
+          onChange={e => { setLocationName(e.target.value); setError(null); }}
+          placeholder="例：外婆家、西湖断桥（可选）"
+          maxLength={120}
+          aria-describedby="event-location-hint"
+        />
+        <div className="form-row">
+          <input
+            className="form-input"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="纬度"
+            value={latitude}
+            onChange={e => { setLatitude(e.target.value); setError(null); }}
+            onPaste={handleCoordinatePaste}
+            placeholder="纬度"
+          />
+          <input
+            className="form-input"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="经度"
+            value={longitude}
+            onChange={e => { setLongitude(e.target.value); setError(null); }}
+            onPaste={handleCoordinatePaste}
+            placeholder="经度"
+          />
+        </div>
+        <div className="form-location-actions">
+          <button
+            className="btn btn--secondary btn--sm"
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={locating}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1.4a3.8 3.8 0 0 0-3.8 3.8c0 2.7 3.8 6.9 3.8 6.9s3.8-4.2 3.8-6.9A3.8 3.8 0 0 0 7 1.4z" stroke="currentColor" strokeWidth="1.3"/>
+              <circle cx="7" cy="5.2" r="1.15" fill="currentColor"/>
+            </svg>
+            {locating ? '正在定位…' : '使用当前位置'}
+          </button>
+        </div>
+        <p className="form-field-hint" id="event-location-hint">
+          可选。可只填名称；经纬度可手动填写，或粘贴坐标。
+        </p>
       </div>
 
       {/* Year range */}

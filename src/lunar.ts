@@ -27,6 +27,19 @@ export interface LunarDate {
   isLeap: boolean;
 }
 
+/** WGS84 coordinates in decimal degrees. */
+export interface GeoCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+/** Place attached to a recurring event. Coordinates are optional. */
+export interface EventLocation {
+  /** Place name or address. Empty when only coordinates were provided. */
+  name: string;
+  coordinates?: GeoCoordinates;
+}
+
 export interface LunarEvent {
   id: string;
   name: string;
@@ -35,6 +48,8 @@ export interface LunarEvent {
   isLeapMonth: boolean;
   startYear: number;
   endYear: number;
+  /** Optional place. Events saved before location support omit this. */
+  location?: EventLocation;
 }
 
 export interface MonthEntry {

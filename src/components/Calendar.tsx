@@ -55,13 +55,18 @@ function DayCell({ lunarDay, solar, isToday, isSelected, isWeekend, onClick }: D
 
   const lunarLabel = formatLunarDay(lunarDay);
   const isSpecial = lunarDay === 1 || lunarDay === 15;
+  const solarLabel = solar.day === 1 ? `${solar.month}/${solar.day}` : String(solar.day);
 
   return (
-    <button className={className} onClick={onClick} title={`${solar.year}-${solar.month}-${solar.day}`}>
-      <span className="cal-cell__solar">{solar.day}</span>
+    <button
+      className={className}
+      onClick={onClick}
+      title={`公历 ${solar.year}年${solar.month}月${solar.day}日`}
+    >
       <span className={`cal-cell__lunar${isSpecial ? ' cal-cell__lunar--special' : ''}`}>
         {lunarLabel}
       </span>
+      <span className="cal-cell__solar">{solarLabel}</span>
     </button>
   );
 }

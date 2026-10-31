@@ -1,5 +1,6 @@
 import { LunarEvent, formatLunarMonth, formatLunarDay } from '../lunar';
 import { buildICS, countOccurrences, triggerDownload } from '../ics';
+import { formatCoordinates, locationMapUrl, normalizeLocation } from '../geo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -23,6 +24,17 @@ function EventCard({ event, onDelete }: EventCardProps) {
   const lunarLabel = formatLunarMonth(event.lunarMonth, event.isLeapMonth) +
     formatLunarDay(event.lunarDay);
 
+  const location = normalizeLocation(event.location);
+  const mapUrl = location ? locationMapUrl(location) : null;
+  const coordLabel = location?.coordinates
+    ? formatCoordinates(location.coordinates.latitude, location.coordinates.longitude)
+    : '';
+  const locationLabel = location
+    ? location.name && coordLabel
+      ? `${location.name} · ${coordLabel}`
+      : location.name || coordLabel
+    : '';
+
   const occurrences = countOccurrences(event);
 
   const handleDownload = () => {
@@ -35,6 +47,22 @@ function EventCard({ event, onDelete }: EventCardProps) {
     <div className="event-card">
       <div className="event-card__body">
         <div className="event-card__name">{event.name}</div>
+        {locationLabel && mapUrl && (
+          <div className="event-card__location">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 1.4a3.8 3.8 0 0 0-3.8 3.8c0 2.7 3.8 6.9 3.8 6.9s3.8-4.2 3.8-6.9A3.8 3.8 0 0 0 7 1.4z" stroke="currentColor" strokeWidth="1.3"/>
+              <circle cx="7" cy="5.2" r="1.15" fill="currentColor"/>
+            </svg>
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="在高德地图中打开"
+            >
+              {locationLabel}
+            </a>
+          </div>
+        )}
         <div className="event-card__meta">
           <span className="event-card__badge">{lunarLabel}</span>
           <span className="event-card__range">
@@ -112,7 +140,7 @@ export default function EventList({ events, onDelete }: EventListProps) {
       {events.length > 0 && (
         <div className="event-list__footer">
           <p className="event-list__tip">
-            下载 ICS 文件后，在 Google 日历或 Apple 日历中选择「导入」即可添加所有活动。每个活动对应准确的公历日期。
+            下载 ICS 文件后，在 Google 日历或 Apple 日历中选择「导入」即可添加所有活动。每个活动对应准确的公历日期。填写了地理位置的活动会带上地点；有经纬度时，Apple 日历可在地图中显示。
           </p>
         </div>
       )}

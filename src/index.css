@@ -85,6 +85,13 @@ body { background: var(--bg); min-height: 100vh; }
   align-items: start;
 }
 
+.app-layout__primary {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
 .app-layout__calendar {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -93,15 +100,7 @@ body { background: var(--bg); min-height: 100vh; }
 }
 
 .app-layout__sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.app-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0 4px;
+  min-width: 0;
 }
 
 /* Footer */
@@ -267,36 +266,36 @@ body { background: var(--bg); min-height: 100vh; }
 .cal-cell--today {
   background: var(--accent-light);
 }
-.cal-cell--today .cal-cell__solar {
-  color: var(--accent);
-  font-weight: 700;
-}
 
 .cal-cell--selected {
   background: var(--accent);
 }
-.cal-cell--selected .cal-cell__solar,
-.cal-cell--selected .cal-cell__lunar { color: #fff !important; }
-
-.cal-cell--weekend .cal-cell__solar { color: var(--accent); }
-
-.cal-cell__solar {
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 1;
-  color: var(--text-primary);
-}
+.cal-cell--selected .cal-cell__lunar,
+.cal-cell--selected .cal-cell__solar { color: #fff !important; }
 
 .cal-cell__lunar {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  line-height: 1;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--text-primary);
 }
 .cal-cell__lunar--special {
   color: var(--accent);
   font-weight: 600;
 }
+.cal-cell--weekend .cal-cell__lunar,
+.cal-cell--today .cal-cell__lunar {
+  color: var(--accent);
+}
+.cal-cell--today .cal-cell__lunar { font-weight: 700; }
 .cal-cell--selected .cal-cell__lunar--special { color: rgba(255,255,255,.9) !important; }
+
+.cal-cell__solar {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-tertiary);
+}
 
 /* Calendar footer */
 .cal-footer {
@@ -430,6 +429,23 @@ body { background: var(--bg); min-height: 100vh; }
   border-left: 3px solid var(--accent);
 }
 
+.form-row > .form-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.form-location-actions {
+  display: flex;
+  align-items: center;
+}
+
+.form-field-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Event List
 ───────────────────────────────────────────────────────────────────────────── */
@@ -482,6 +498,25 @@ body { background: var(--bg); min-height: 100vh; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.event-card__location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.event-card__location svg { flex-shrink: 0; }
+.event-card__location a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
+}
+.event-card__location a:hover { color: var(--accent); }
 .event-card__meta {
   display: flex;
   align-items: center;
@@ -530,6 +565,9 @@ body { background: var(--bg); min-height: 100vh; }
   }
   .app-layout__sidebar {
     order: -1;
+  }
+  .app-layout__primary {
+    gap: 16px;
   }
   .app-main { padding: 16px; }
   .app-header__inner { flex-direction: column; align-items: flex-start; gap: 8px; }

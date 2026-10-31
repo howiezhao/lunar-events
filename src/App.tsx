@@ -91,28 +91,27 @@ export default function App() {
       {/* ── Main ── */}
       <main className="app-main">
         <div className="app-layout">
-          {/* Left: Calendar */}
-          <section className="app-layout__calendar">
-            <Calendar
-              viewYear={viewYear}
-              viewMonth={viewMonth}
-              viewIsLeap={viewIsLeap}
-              selected={selected}
-              onSelect={handleSelect}
-              onNavigate={handleNavigate}
+          <div className="app-layout__primary">
+            <section className="app-layout__calendar">
+              <Calendar
+                viewYear={viewYear}
+                viewMonth={viewMonth}
+                viewIsLeap={viewIsLeap}
+                selected={selected}
+                onSelect={handleSelect}
+                onNavigate={handleNavigate}
+              />
+            </section>
+            <EventList
+              events={events}
+              onDelete={handleDeleteEvent}
             />
-          </section>
+          </div>
 
-          {/* Right: Form + List */}
           <aside className="app-layout__sidebar">
             <EventForm
               selectedDate={selected}
               onAdd={handleAddEvent}
-            />
-            <div className="app-divider" />
-            <EventList
-              events={events}
-              onDelete={handleDeleteEvent}
             />
           </aside>
         </div>
